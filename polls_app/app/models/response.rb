@@ -11,7 +11,8 @@
 #
 
 class Response < ApplicationRecord
-  validates :answer_choice_id, :user_id, :text, presence: true
+  validates :answer_choice_id, :user_id, presence: true
+  validate :not_duplicate_response, :is_author_of_this_poll?
   
   belongs_to :answer_choice,
   primary_key: :id,
@@ -22,4 +23,34 @@ class Response < ApplicationRecord
   primary_key: :id,
   foreign_key: :user_id,
   class_name: :User
+  
+  has_one :question,
+  through: :answer_choice,
+  source: :question
+  
+  has_one :poll,
+  through: :question,
+  source: :poll
+  
+  has_one :author_of_poll,
+  through: :poll,
+  source: :author
+  
+  def sibling_responses
+    self.question.responses.where.not(self.id)
+  end
+  
+  def respondent_already_answered?
+    self.sibling_responses.exists?(user_id: (self.user_id)) 
+  end
+  
+  def not_duplicate_response
+    errors[:response] << 'You already answered!' if respondent_already_answered?  
+  end
+  
+  def is_author_of_this_poll?
+    if self.author_of_poll.id == self.user_id
+      errors[:response] << 'You are responding to your own poll you corrupt ass'
+    end
+  end
 end

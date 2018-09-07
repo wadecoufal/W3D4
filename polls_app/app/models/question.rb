@@ -22,4 +22,19 @@ class Question < ApplicationRecord
   foreign_key: :question_id,
   class_name: :AnswerChoice
   
+  has_many :responses,
+  through: :answer_choices,
+  source: :responses
+  
+  def results
+    answer_choices = self.answer_choices
+    answer_counts = {}
+    
+    answer_choices.each do |answer|
+      answer_counts[answer.text] = answer.responses.length
+    end
+    
+    answer_counts
+  end
+  
 end
